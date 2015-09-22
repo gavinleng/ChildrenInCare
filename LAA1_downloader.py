@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+#
 """
 LAA1_downloader.py
 Created on Fri Sep 18 14:05:54 2015
@@ -50,8 +50,8 @@ def download(url, sheet, reqFields, outPath):
                 if df.iloc[i,j]==(int(k) or k):
                     kk.append(j)
                     restartIndex = i + 1
-    						
-            if len(kk)==2:    
+
+            if len(kk)==2:
                 yearCol.append(max(kk))
         
         #print ('checking row ' + i)
@@ -101,7 +101,7 @@ if args.generateConfig:
     with open("config_LAA1.json", "w") as outfile:
         json.dump(obj, outfile, indent=4)
         sys.exit("config file generated")
-	
+
 if args.configFile == None:
     args.configFile = "config_LAA1.json"
 

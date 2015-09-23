@@ -33,7 +33,7 @@ def download(url, sheet, reqFields, outPath):
     except urllib.error.URLError as e:
         sys.exit('excel download URLError = ' + str(e.args))
     except Exception:
-        print ('excel file download error')
+        print('excel file download error')
         import traceback
         sys.exit('generic exception: ' + traceback.format_exc())
     
@@ -41,32 +41,30 @@ def download(url, sheet, reqFields, outPath):
     xd = pd.ExcelFile(socket)
     df = xd.parse(sheet)
     
-    print ('indicator checking------')
+    print('indicator checking------')
     for i in range(df.shape[0]):
         yearCol = []
         for k in yearReq:
             kk = []
             for j in range(df.shape[1]):
-                if df.iloc[i,j]==(int(k) or k):
+                if df.iloc[i,j] == (int(k) or k):
                     kk.append(j)
                     restartIndex = i + 1
 
             if len(kk)==2:
                 yearCol.append(max(kk))
         
-        #print ('checking row ' + i)
-        
         if len(yearCol)==len(yearReq):
             break
     
-    if len(yearCol)!=len(yearReq):
+    if len(yearCol) != len(yearReq):
         sys.exit("Requested data " + str(yearReq).strip('[]') + " don't match the excel file. Please check the file at: " + url)
     
     raw_data = {}
     for j in col:
         raw_data[j] = []
     
-    print ('data reading------')
+    print('data reading------')
     for i in range(restartIndex, df.shape[0]):
         if re.match(r'^\d{3}$', str(df.iloc[i, 0])):
             ii = 0
@@ -77,16 +75,14 @@ def download(url, sheet, reqFields, outPath):
                 raw_data[col[3]].append(df.iloc[i, yearCol[ii]])
                 ii += 1
     
-        #print ('reading row ' + i)
-    
     #save csv file
-    print ('writing to file ' + dName)
-    dfw = pd.DataFrame(raw_data, columns = col)
-    dfw.to_csv(dName, index = False)
+    print('writing to file ' + dName)
+    dfw = pd.DataFrame(raw_data, columns=col)
+    dfw.to_csv(dName, index=False)
     print('Requested data has been extracted and saved as ' + dName)
     print("finished")
 
-parser = argparse.ArgumentParser(description='Extract online Excel file LAA1 to .csv file.')
+parser = argparse.ArgumentParser(description='Extract online Children in Care Excel file LAA1 to .csv file.')
 parser.add_argument("--generateConfig", "-g", help="generate a config file called config_LAA1.json", action="store_true")
 parser.add_argument("--configFile", "-c", help="path for config file")
 args = parser.parse_args()
@@ -107,6 +103,6 @@ if args.configFile == None:
 
 with open(args.configFile) as json_file:
     oConfig = json.load(json_file)
-    print ("read config file")
+    print("read config file")
 
 download(oConfig["url"], oConfig["sheet"], oConfig["reqFields"], oConfig["outPath"])

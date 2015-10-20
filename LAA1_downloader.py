@@ -13,6 +13,7 @@ import pandas as pd
 import re
 import argparse
 import json
+import datetime
 
 # url = "https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/410395/SFR36_2014_LA_tables_revised.xlsx"
 # output_path = "" 
@@ -29,18 +30,26 @@ def download(url, sheet, reqFields, outPath):
     try:
         socket = urllib.request.urlopen(url)
     except urllib.error.HTTPError as e:
+        errfile.write(str(now()) + ' excel download HTTPError is ' + str(e.code) + ' . End progress\n')
+        logfile.write(str(now()) + ' error and end progress\n')
         sys.exit('excel download HTTPError = ' + str(e.code))
     except urllib.error.URLError as e:
+        errfile.write(str(now()) + ' excel download URLError is ' + str(e.args) + ' . End progress\n')
+        logfile.write(str(now()) + ' error and end progress\n')
         sys.exit('excel download URLError = ' + str(e.args))
     except Exception:
         print('excel file download error')
         import traceback
+        errfile.write(str(now()) + ' generic exception: ' + str(traceback.format_exc()) + ' . End progress\n')
+        logfile.write(str(now()) + ' error and end progress\n')
         sys.exit('generic exception: ' + traceback.format_exc())
     
     #operate this excel file
+    logfile.write(str(now()) + ' excel file loading\n')
     xd = pd.ExcelFile(socket)
     df = xd.parse(sheet)
-    
+
+    logfile.write(str(now()) + ' indicator checking\n')
     print('indicator checking------')
     for i in range(df.shape[0]):
         yearCol = []
@@ -51,19 +60,23 @@ def download(url, sheet, reqFields, outPath):
                     kk.append(j)
                     restartIndex = i + 1
 
-            if len(kk)==2:
+            if len(kk) == 2:
                 yearCol.append(max(kk))
         
-        if len(yearCol)==len(yearReq):
+        if len(yearCol) == len(yearReq):
             break
     
     if len(yearCol) != len(yearReq):
+        errfile.write(str(now()) + " Requested data " + str(yearReq).strip(
+            '[]') + " don't match the excel file. Please check the file at: " + str(url) + " . End progress\n")
+        logfile.write(str(now()) + ' error and end progress\n')
         sys.exit("Requested data " + str(yearReq).strip('[]') + " don't match the excel file. Please check the file at: " + url)
     
     raw_data = {}
     for j in col:
         raw_data[j] = []
-    
+
+    logfile.write(str(now()) + ' data reading\n')
     print('data reading------')
     for i in range(restartIndex, df.shape[0]):
         if re.match(r'^\d{3}$', str(df.iloc[i, 0])):
@@ -79,8 +92,14 @@ def download(url, sheet, reqFields, outPath):
     print('writing to file ' + dName)
     dfw = pd.DataFrame(raw_data, columns=col)
     dfw.to_csv(dName, index=False)
+    logfile.write(str(now()) + ' has been extracted and saved as ' + str(dName) + '\n')
     print('Requested data has been extracted and saved as ' + dName)
+    logfile.write(str(now()) + ' finished\n')
     print("finished")
+
+def now():
+    return datetime.datetime.now()
+
 
 parser = argparse.ArgumentParser(description='Extract online Children in Care Excel file LAA1 to .csv file.')
 parser.add_argument("--generateConfig", "-g", help="generate a config file called config_LAA1.json", action="store_true")
@@ -88,21 +107,34 @@ parser.add_argument("--configFile", "-c", help="path for config file")
 args = parser.parse_args()
 
 if args.generateConfig: 
-    obj = {"url":"https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/410395/SFR36_2014_LA_tables_revised.xlsx", 
-           "outPath":"tempLAA1.csv",
-           "sheet":"LAA1",
-           "reqFields":["2011", "2012", "2013", "2014"]
+    obj = {"url": "https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/410395/SFR36_2014_LA_tables_revised.xlsx",
+           "outPath": "tempLAA1.csv",
+           "sheet": "LAA1",
+           "reqFields": ["2011", "2012", "2013", "2014"]
            }
 
-    with open("config_LAA1.json", "w") as outfile:
+    logfile = open("log_tempLAA1.log", "w")
+    logfile.write(str(now()) + ' start\n')
+
+    errfile = open("err_tempLAA1.err", "w")
+
+    with open("config_tempLAA1.json", "w") as outfile:
         json.dump(obj, outfile, indent=4)
+        logfile.write(str(now()) + ' config file generated and end\n')
         sys.exit("config file generated")
 
 if args.configFile == None:
-    args.configFile = "config_LAA1.json"
+    args.configFile = "config_tempLAA1.json"
 
 with open(args.configFile) as json_file:
     oConfig = json.load(json_file)
+
+    logfile = open('log_' + oConfig["outPath"].split('.')[0] + '.log', "w")
+    logfile.write(str(now()) + ' start\n')
+
+    errfile = open('err_' + oConfig["outPath"].split('.')[0] + '.err', "w")
+
+    logfile.write(str(now()) + ' read config file\n')
     print("read config file")
 
 download(oConfig["url"], oConfig["sheet"], oConfig["reqFields"], oConfig["outPath"])

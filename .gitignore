@@ -1,3 +1,6 @@
-/.idea/
+.idea/
 *.json
 *.csv
+*.iml
+*.err
+*.log
